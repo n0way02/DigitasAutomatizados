@@ -230,8 +230,10 @@ public sealed class KeyboundScanner
     {
         "Tankbuster", "Big Bomber", "Hellfire", "Megiddo", "Shadow Flare", "Germinate",
         "Bad Breath", "Cursed Gaze", "Stop Press", "Letterlock", "Expansion", "Expansion 100%",
-        "Explosion", "Self-Destruct", "1000 Needles", "10,000 Needles", "Bio", "Miasma",
-        "Aero", "Aeroga", "Tornado", "Quake", "Fluid Strike", "Laser", "Pulse"
+        "Explosion", "Self-Destruct", "??? Needles", "1000 Needles", "10,000 Needles", "100,000 Needles",
+        "Needles", "Needle", "Bio", "Miasma", "Aero", "Aeroga", "Tornado", "Quake", "Fluid Strike",
+        "Laser", "Pulse", "Thermal Cutter", "Discharger", "Diffractive Laser", "100 Tonze Swing",
+        "Gigaflare", "Teraflare", "Megaflare", "Tail Drive", "Tail Screw", "Burst", "Burr Burrow",
     };
 
     /// <summary>Reads all active enemy cast bars to get cast names and detect dangerous Gaze attacks.</summary>
@@ -293,18 +295,41 @@ public sealed class KeyboundScanner
 
     public static bool IsCastName(string word, HashSet<string> castNames)
     {
-        if (string.IsNullOrWhiteSpace(word) || castNames.Count == 0) return false;
+        if (string.IsNullOrWhiteSpace(word)) return false;
         if (IsBarrierPhrase(word)) return false; // Barrier phrases should never be filtered
 
-        if (castNames.Contains(word)) return true;
-
-        foreach (var cast in castNames)
+        // Universal cast indicators and known cast keywords
+        if (word.Contains("?") ||
+            word.Contains("Needles", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Needle", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Gaze", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Breath", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Bomber", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Tankbuster", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Hellfire", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Megiddo", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Shadow Flare", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Explosion", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Destruct", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Laser", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Tornado", StringComparison.OrdinalIgnoreCase) ||
+            word.Contains("Tonze", StringComparison.OrdinalIgnoreCase))
         {
-            if (word.Equals(cast, StringComparison.OrdinalIgnoreCase)) return true;
-            // If the cast name is contained in the word
-            if (cast.Length >= 4 && (word.Contains(cast, StringComparison.OrdinalIgnoreCase) || cast.Contains(word, StringComparison.OrdinalIgnoreCase)))
+            return true;
+        }
+
+        if (castNames.Count > 0)
+        {
+            if (castNames.Contains(word)) return true;
+
+            foreach (var cast in castNames)
             {
-                return true;
+                if (word.Equals(cast, StringComparison.OrdinalIgnoreCase)) return true;
+                // If the cast name is contained in the word
+                if (cast.Length >= 4 && (word.Contains(cast, StringComparison.OrdinalIgnoreCase) || cast.Contains(word, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
             }
         }
 
@@ -545,6 +570,21 @@ public sealed class KeyboundScanner
         if (Regex.IsMatch(text, @"^[\d\s\/\%\:\,\.\+\-]+$")) return false;
         if (IgnoredPhrases.Contains(text)) return false;
         if (!text.Any(char.IsLetter)) return false;
+
+        // Question marks are NEVER in valid typing words (they indicate hidden casts like '??? Needles' or system text)
+        if (text.Contains("?")) return false;
+
+        // Universal exclusion of known cast keywords
+        if (text.Contains("Needles", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Needle", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Gaze", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Tankbuster", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Bad Breath", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Big Bomber", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Self-Destruct", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
 
         return true;
     }
