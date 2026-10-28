@@ -3,13 +3,14 @@
     "Author": "n0way02",
     "Name": "Digitas Automatizados",
     "InternalName": "KeyboundTyper",
-    "AssemblyVersion": "1.2.0.0",
+    "AssemblyVersion": "1.3.0.0",
     "Description": "Digitação automática inteligente e de alto desempenho para o minigame Keybound Brawler do Gold Saucer (FFXIV x FFVII).",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "Punchline": "Auto-typer inteligente para o minigame Keybound Brawler.",
-    "DownloadLinkInstall": "https://github.com/n0way02/DigitasAutomatizados/releases/latest/download/latest.zip",
-    "DownloadLinkTesting": "https://github.com/n0way02/DigitasAutomatizados/releases/latest/download/latest.zip",
-    "DownloadLinkUpdate": "https://github.com/n0way02/DigitasAutomatizados/releases/latest/download/latest.zip"
+    "IconUrl": "https://raw.githubusercontent.com/n0way02/DigitasAutomatizados/main/images/icon.png",
+    "DownloadLinkInstall": "https://raw.githubusercontent.com/n0way02/DigitasAutomatizados/main/releases/latest.zip",
+    "DownloadLinkTesting": "https://raw.githubusercontent.com/n0way02/DigitasAutomatizados/main/releases/latest.zip",
+    "DownloadLinkUpdate": "https://raw.githubusercontent.com/n0way02/DigitasAutomatizados/main/releases/latest.zip"
   }
 ]

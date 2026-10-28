@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/icon.png" width="160" height="160" alt="Digitas Automatizados Icon" />
+</p>
+
 # ⚡ Digitas Automatizados (Keybound Typer)
 
 Plugin nativo para **FFXIV (Dalamud)** projetado para automatizar e otimizar a digitação no minigame **Keybound Brawler** do Gold Saucer (colaboração FFVII Remake).
