@@ -49,4 +49,41 @@ public static unsafe class AddonHelper
 
         addon->FireCallback((uint)values.Length, atkValues, true);
     }
+
+    public static bool ClickButton(AtkUnitBase* addon, AtkComponentButton* button)
+    {
+        if (addon == null || button == null || !button->IsEnabled)
+            return false;
+
+        var ownerNode = button->AtkComponentBase.OwnerNode;
+        if (ownerNode == null)
+            return false;
+
+        var evt = ownerNode->AtkResNode.AtkEventManager.Event;
+        if (evt == null)
+            return false;
+
+        addon->ReceiveEvent(evt->State.EventType, (int)evt->Param, evt);
+        return true;
+    }
+
+    public static bool ClickContentsFinderCommence()
+    {
+        var ptr = Plugin.GameGui.GetAddonByName("ContentsFinderConfirm");
+        if (ptr.Address == nint.Zero) return false;
+
+        var addon = (FFXIVClientStructs.FFXIV.Client.UI.AddonContentsFinderConfirm*)ptr.Address;
+        if (addon == null || !addon->AtkUnitBase.IsVisible) return false;
+
+        // 1. Tenta clique nativo direto no CommenceButton
+        if (addon->CommenceButton != null && ClickButton(&addon->AtkUnitBase, addon->CommenceButton))
+        {
+            Plugin.Log.Information("[AddonHelper] Clicou no botão Commence nativo via AtkButtonClicker.");
+            return true;
+        }
+
+        // 2. Fallback: FireCallback com index 8 (Commence no ContentsFinderConfirm)
+        FireCallback(&addon->AtkUnitBase, 8);
+        return true;
+    }
 }

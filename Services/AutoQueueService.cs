@@ -205,6 +205,21 @@ public sealed class AutoQueueService : IDisposable
                 if (isBoundByDuty || isInKeybound)
                 {
                     SetState(AutoQueueState.InDuty, "Na partida do Keybound Brawler!");
+                    return;
+                }
+
+                // Continua clicando em Commence enquanto a janela ContentsFinderConfirm estiver aberta
+                if (stateTimer.ElapsedMilliseconds >= 300)
+                {
+                    if (TryHandleContentsFinderConfirm())
+                    {
+                        StatusText = "Partida encontrada! Confirmando Commence...";
+                    }
+                }
+
+                if (stateTimer.ElapsedMilliseconds > 45000)
+                {
+                    SetState(AutoQueueState.WaitingOutside, "Tempo de confirmação expirado. Verificando fila...");
                 }
                 break;
 
@@ -274,14 +289,7 @@ public sealed class AutoQueueService : IDisposable
     {
         if (!config.AutoAcceptQueue) return false;
 
-        var ptr = Plugin.GameGui.GetAddonByName("ContentsFinderConfirm");
-        var addon = (AtkUnitBase*)ptr.Address;
-        if (addon != null && addon->IsVisible)
-        {
-            AddonHelper.FireCallback(addon, 0);
-            return true;
-        }
-        return false;
+        return AddonHelper.ClickContentsFinderCommence();
     }
 
     private const uint QueueNpcBaseId = 1058751;
