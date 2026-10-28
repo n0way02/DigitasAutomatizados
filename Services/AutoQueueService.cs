@@ -284,9 +284,20 @@ public sealed class AutoQueueService : IDisposable
         return false;
     }
 
+    private const uint QueueNpcBaseId = 1058751;
+
     private unsafe bool TryHandleExitDialog()
     {
         if (!config.AutoExitDuty) return false;
+
+        // Addon oficial de encerramento do Keybound Brawler (Saucy)
+        var ktgResultPtr = Plugin.GameGui.GetAddonByName("KTGResult");
+        var ktgResult = (AtkUnitBase*)ktgResultPtr.Address;
+        if (ktgResult != null && ktgResult->IsVisible)
+        {
+            AddonHelper.FireCallback(ktgResult, 0);
+            return true;
+        }
 
         // Se abrir a confirmação padrão de saída "SelectYesno"
         var selectYesnoPtr = Plugin.GameGui.GetAddonByName("SelectYesno");
@@ -308,12 +319,12 @@ public sealed class AutoQueueService : IDisposable
             if (unit == null || !unit->IsVisible) continue;
             var name = unit->NameString;
 
-            if (name.Contains("Result", StringComparison.OrdinalIgnoreCase) ||
+            if (name.Contains("KTGResult", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("TurnBreak", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("Exit", StringComparison.OrdinalIgnoreCase))
             {
-                // Dispara confirmação para fechar janela de resultados / sair
                 AddonHelper.FireCallback(unit, 0);
+                return true;
             }
         }
 
@@ -322,6 +333,14 @@ public sealed class AutoQueueService : IDisposable
 
     private unsafe AtkUnitBase* FindRegisterAddon()
     {
+        // Addon oficial de diálogo de entrada do Keybound Brawler (Saucy)
+        var enterDialoguePtr = Plugin.GameGui.GetAddonByName("KTGEnterDialogue");
+        var enterDialogue = (AtkUnitBase*)enterDialoguePtr.Address;
+        if (enterDialogue != null && enterDialogue->IsVisible)
+        {
+            return enterDialogue;
+        }
+
         var stage = AtkStage.Instance();
         if (stage == null || stage->RaptureAtkUnitManager == null) return null;
 
@@ -333,7 +352,8 @@ public sealed class AutoQueueService : IDisposable
             var name = unit->NameString;
 
             // Addon do minigame ou com botão Register
-            if (name.Contains("Keybound", StringComparison.OrdinalIgnoreCase) ||
+            if (name.Equals("KTGEnterDialogue", StringComparison.OrdinalIgnoreCase) ||
+                name.Contains("Keybound", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("GoldSaucer", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("TurnBreak", StringComparison.OrdinalIgnoreCase) ||
                 name.Contains("ContentsFinder", StringComparison.OrdinalIgnoreCase))
@@ -360,11 +380,14 @@ public sealed class AutoQueueService : IDisposable
         {
             if (obj == null) continue;
             var name = obj.Name.TextValue;
-            if (string.IsNullOrWhiteSpace(name)) continue;
 
-            if (name.Equals("Keybound Registrar", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Keybound Registrar", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Registrar", StringComparison.OrdinalIgnoreCase))
+            // Identificação por BaseId (Saucy: 1058751) ou por nome
+            var isMatch = obj.BaseId == QueueNpcBaseId ||
+                          name.Equals("Keybound Registrar", StringComparison.OrdinalIgnoreCase) ||
+                          name.Contains("Keybound Registrar", StringComparison.OrdinalIgnoreCase) ||
+                          name.Contains("Registrar", StringComparison.OrdinalIgnoreCase);
+
+            if (isMatch)
             {
                 var dist = Vector3.Distance(player.Position, obj.Position);
                 if (dist < minDistance && dist < 18.0f) // Dentro de 18 yalms

@@ -2,7 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.STD;
 using Lumina.Excel.Sheets;
 
 namespace KeyboundTyper.Services;
@@ -405,11 +409,68 @@ public sealed class KeyboundScanner
         return 0;
     }
 
+    [StructLayout(LayoutKind.Explicit, Size = 0x180)]
+    public struct HudTarget
+    {
+        [FieldOffset(0x04)] public uint BubbleType;
+        [FieldOffset(0x08)] public Utf8String Word;
+        [FieldOffset(0x70)] public Utf8String AlternateWord;
+        [FieldOffset(0xF8)] public float CastProgress;
+    }
+
+    public unsafe List<(string Word, uint BubbleType, float CastProgress)> ReadAgentWords()
+    {
+        var result = new List<(string, uint, float)>();
+        try
+        {
+            var agentModule = AgentModule.Instance();
+            if (agentModule == null) return result;
+            var hud = agentModule->GetAgentByInternalId((AgentId)397);
+            if (hud == null) return result;
+
+            var words = (StdMap<uint, HudTarget>*)((byte*)hud + 0x28);
+            if (*(nint*)words == 0 || words->Count == 0) return result;
+
+            foreach (var entityId in words->Keys)
+            {
+                if (words->TryGetValuePointer(in entityId, out var entry))
+                {
+                    if (entry == null || entry->BubbleType == 3) continue;
+                    var w = entry->Word.ToString();
+                    if (!string.IsNullOrWhiteSpace(w) && IsValidWord(w))
+                    {
+                        result.Add((w, entry->BubbleType, entry->CastProgress));
+                    }
+                    var alt = entry->AlternateWord.ToString();
+                    if (!string.IsNullOrWhiteSpace(alt) && !alt.Equals(w, StringComparison.OrdinalIgnoreCase) && IsValidWord(alt))
+                    {
+                        result.Add((alt, entry->BubbleType, entry->CastProgress));
+                    }
+                }
+            }
+        }
+        catch { }
+        return result;
+    }
+
     public (string? PrimaryWord, bool IsLetterlocked, bool IsGazeHolding, string? GazeSpellName, string? ActiveAddon, List<DetectedTextNode> AllNodes, List<string> ActiveCasts) GetCurrentTarget(string? customAddon = null)
     {
         var nodes = ScanAllNodes(customAddon);
         var (castNameSet, isGazeHolding, gazeSpell) = ReadEnemyCastState();
         var castList = castNameSet.ToList();
+
+        // Saucy Agent 397: Direct memory target map (contains exclusively legitimate words to type, no UI labels, no cast names)
+        var agentCandidates = ReadAgentWords();
+        if (agentCandidates.Count > 0 && IsInKeyboundDuty)
+        {
+            var chosen = agentCandidates
+                .OrderByDescending(c => c.BubbleType == 2 ? 3 : (c.CastProgress > 0 || c.BubbleType == 4 ? 2 : 0))
+                .ThenBy(c => Plugin.Configuration.PrioritizeShortWords ? c.Word.Length : 0)
+                .ThenBy(c => c.Word)
+                .First();
+
+            return (chosen.Word, false, isGazeHolding, gazeSpell, "Agent#397", nodes, castList);
+        }
 
         // Primary source: the game's string array that feeds the KTG addons.
         var arrayIndex = Plugin.Configuration.WordStringArrayIndex;

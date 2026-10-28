@@ -64,6 +64,25 @@ public sealed class AutoTyperService : IDisposable
         {
             lastKeepAliveTime = DateTime.UtcNow;
             KeyboardSimulator.SendKeepAlive();
+
+            // Native engine inactivity timer reset (Saucy: Agent 398 offset 0x50)
+            try
+            {
+                unsafe
+                {
+                    var agentModule = FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentModule.Instance();
+                    if (agentModule != null)
+                    {
+                        var hud = agentModule->GetAgentByInternalId((FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentId)397);
+                        var input = agentModule->GetAgentByInternalId((FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentId)398);
+                        if (input != null && hud != null && *(nint*)((byte*)input + 0x28) == (nint)hud)
+                        {
+                            *(ulong*)((byte*)input + 0x50) = 0;
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         // SAFETY: only type while the wave HUD is up. Enter/keys on result or exit screens can quit the instance.
