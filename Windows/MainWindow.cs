@@ -25,10 +25,11 @@ public sealed class MainWindow : Window, IDisposable
 
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(480, 520),
-            MaximumSize = new Vector2(850, 950)
+            MinimumSize = new Vector2(400, 300),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
         Size = new Vector2(540, 620);
+        SizeCondition = ImGuiCond.FirstUseEver;
     }
 
     private string T(string pt, string en) => config.Language == "en" ? en : pt;
