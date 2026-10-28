@@ -78,7 +78,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.BeginGroup();
         ImGui.TextColored(new Vector4(0.35f, 0.85f, 1.0f, 1.0f), "⌨ Digitas Automatizados");
         ImGui.SameLine();
-        ImGui.TextDisabled("v1.1");
+        ImGui.TextDisabled("v1.6.0");
         ImGui.EndGroup();
 
         ImGui.SameLine();
@@ -137,7 +137,13 @@ public sealed class MainWindow : Window, IDisposable
 
         if (config.Enabled)
         {
-            if (autoTyper.IsCurrentlyLetterlocked)
+            if (autoTyper.IsCurrentlyForbiddenCast)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 0.45f, 0.1f, 1.0f));
+                ImGui.TextUnformatted(T($"● [PAUSADO] CAST PROIBIDO ({autoTyper.ActiveForbiddenCastName ?? "Gaze/Sensory Jammer"}) [{autoTyper.ForbiddenCastRemainingMs}ms]",
+                                       $"● [PAUSED] FORBIDDEN CAST ({autoTyper.ActiveForbiddenCastName ?? "Gaze/Sensory Jammer"}) [{autoTyper.ForbiddenCastRemainingMs}ms]"));
+            }
+            else if (autoTyper.IsCurrentlyLetterlocked)
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 0.35f, 0.35f, 1.0f));
                 ImGui.TextUnformatted(T("● [PAUSADO] LETTERLOCK ATIVO", "● [PAUSED] LETTERLOCK ACTIVE"));
@@ -150,7 +156,8 @@ public sealed class MainWindow : Window, IDisposable
             else
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.2f, 1.0f, 0.45f, 1.0f));
-                ImGui.TextUnformatted(T("● [ATIVO] AUTO-TYPER PRONTO", "● [ACTIVE] AUTO-TYPER READY"));
+                var engineName = config.UseSaucyEngine ? "MOTOR SAUCY" : "SENDINPUT";
+                ImGui.TextUnformatted(T($"● [ATIVO - {engineName}] AUTO-TYPER PRONTO", $"● [ACTIVE - {engineName}] AUTO-TYPER READY"));
             }
         }
         else
@@ -254,15 +261,56 @@ public sealed class MainWindow : Window, IDisposable
         }
         ImGui.EndChild();
 
-        SectionHeader(T("⚡ Presets de Velocidade", "⚡ Speed Presets"));
+        SectionHeader(T("⚙️ Modo do Motor de Digitação", "⚙️ Typing Engine Mode"));
 
+        var useSaucy = config.UseSaucyEngine;
+        if (ImGui.Checkbox(T("Usar Motor Nativo Saucy (100% de Precisão - Sem Erros de Digitação)", "Use Saucy Native Engine (100% Accuracy - Zero Typos)"), ref useSaucy))
+        {
+            config.UseSaucyEngine = useSaucy;
+            config.Save();
+        }
+        if (config.UseSaucyEngine)
+        {
+            ImGui.TextColored(new Vector4(0.2f, 0.95f, 0.45f, 1.0f), T("✔ Ativo: Dispara a ação de palavra na memória do jogo com o tempo humano dos sliders abaixo.",
+                                                                        "✔ Active: Fires the word action in game memory adhering to the human speed sliders below."));
+        }
+        else
+        {
+            ImGui.TextColored(new Vector4(0.95f, 0.75f, 0.2f, 1.0f), T("Modo Teclado: Simulação física via SendInput caractere por caractere.",
+                                                                        "Keyboard Mode: Physical SendInput character-by-character simulation."));
+        }
+
+        SectionHeader(T("⚡ Velocidade de Digitação (Sliders ms por Caractere)", "⚡ Typing Speed (ms per Character Sliders)"));
+        ImGui.TextDisabled(T("Quanto maior o valor no slider, mais devagar e seguro ele digita:", "The higher the slider value, the slower and safer it types:"));
+
+        var minCharDelay = config.MinCharDelayMs;
+        if (ImGui.SliderInt(T("Delay Mínimo por Letra (ms)###MinCharDelay", "Min Delay per Character (ms)###MinCharDelay"), ref minCharDelay, 5, 500))
+        {
+            config.MinCharDelayMs = minCharDelay;
+            if (config.MaxCharDelayMs < minCharDelay) config.MaxCharDelayMs = minCharDelay;
+            config.Save();
+        }
+
+        var maxCharDelay = config.MaxCharDelayMs;
+        if (ImGui.SliderInt(T("Delay Máximo por Letra (ms)###MaxCharDelay", "Max Delay per Character (ms)###MaxCharDelay"), ref maxCharDelay, 5, 500))
+        {
+            config.MaxCharDelayMs = Math.Max(config.MinCharDelayMs, maxCharDelay);
+            config.Save();
+        }
+
+        var currentAvg = (config.MinCharDelayMs + config.MaxCharDelayMs) / 2;
+        var estWpm = currentAvg > 0 ? (12000 / currentAvg) : 999;
+        ImGui.TextColored(new Vector4(0.35f, 0.85f, 1.0f, 1.0f), $"{T("Velocidade Estimada", "Estimated Speed")}: ~{estWpm} WPM ({config.MinCharDelayMs} - {config.MaxCharDelayMs} ms/letra)");
+
+        ImGui.Spacing();
+        ImGui.TextDisabled(T("Presets Rápidos de Velocidade:", "Quick Speed Presets:"));
         var btnWidth = (ImGui.GetContentRegionAvail().X - 18f) / 4f;
 
         if (ImGui.Button($"{T("Humano Seguro", "Safe Human")}\n(80 WPM)", new Vector2(btnWidth, 42)))
         {
             config.InitialDelayMs = 100;
-            config.MinCharDelayMs = 65;
-            config.MaxCharDelayMs = 114;
+            config.MinCharDelayMs = 80;
+            config.MaxCharDelayMs = 130;
             config.DelayBeforeEnterMs = 100;
             config.DelayPostEnterMs = 120;
             config.DelayAfterWordMs = 50;
@@ -275,8 +323,8 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button($"{T("Rápido", "Fast")}\n(140 WPM)", new Vector2(btnWidth, 42)))
         {
             config.InitialDelayMs = 75;
-            config.MinCharDelayMs = 25;
-            config.MaxCharDelayMs = 45;
+            config.MinCharDelayMs = 40;
+            config.MaxCharDelayMs = 70;
             config.DelayBeforeEnterMs = 30;
             config.DelayPostEnterMs = 110;
             config.DelayAfterWordMs = 30;
@@ -288,8 +336,8 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button($"{T("Pro", "Pro")}\n(200 WPM)", new Vector2(btnWidth, 42)))
         {
             config.InitialDelayMs = 60;
-            config.MinCharDelayMs = 12;
-            config.MaxCharDelayMs = 22;
+            config.MinCharDelayMs = 18;
+            config.MaxCharDelayMs = 30;
             config.DelayBeforeEnterMs = 20;
             config.DelayPostEnterMs = 95;
             config.DelayAfterWordMs = 15;
@@ -301,8 +349,8 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button($"{T("Turbo", "Turbo")}\n({T("Instantâneo", "Instant")})", new Vector2(btnWidth, 42)))
         {
             config.InitialDelayMs = 50;
-            config.MinCharDelayMs = 4;
-            config.MaxCharDelayMs = 8;
+            config.MinCharDelayMs = 5;
+            config.MaxCharDelayMs = 12;
             config.DelayBeforeEnterMs = 10;
             config.DelayPostEnterMs = 85;
             config.DelayAfterWordMs = 0;
@@ -311,9 +359,9 @@ public sealed class MainWindow : Window, IDisposable
             config.Save();
         }
 
-        // Collapsible Advanced Timing Sliders (Hidden by default for a clean, sleek UI)
+        // Collapsible Advanced Timing Sliders
         ImGui.Spacing();
-        if (ImGui.CollapsingHeader(T("⏱️ Ajustes Finos de Timing & Delays (Opcional)", "⏱️ Advanced Timing & Delays (Optional)")))
+        if (ImGui.CollapsingHeader(T("⏱️ Ajustes Finos de Timing Extras (Opcional)", "⏱️ Extra Timing & Delays (Optional)")))
         {
             ImGui.Indent();
 
@@ -328,21 +376,6 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.SliderInt(T("Delay Inicial antes da 1ª Letra (ms)", "Initial Delay before 1st Character (ms)"), ref initDelay, 30, 250))
             {
                 config.InitialDelayMs = initDelay;
-                config.Save();
-            }
-
-            var minDelay = config.MinCharDelayMs;
-            if (ImGui.SliderInt(T("Delay Mínimo por Letra (ms)", "Min Delay per Character (ms)"), ref minDelay, 1, 150))
-            {
-                config.MinCharDelayMs = minDelay;
-                if (config.MaxCharDelayMs < minDelay) config.MaxCharDelayMs = minDelay;
-                config.Save();
-            }
-
-            var maxDelay = config.MaxCharDelayMs;
-            if (ImGui.SliderInt(T("Delay Máximo por Letra (ms)", "Max Delay per Character (ms)"), ref maxDelay, 1, 200))
-            {
-                config.MaxCharDelayMs = Math.Max(config.MinCharDelayMs, maxDelay);
                 config.Save();
             }
 
@@ -379,6 +412,15 @@ public sealed class MainWindow : Window, IDisposable
 
         SectionHeader(T("🛡️ Prioridade de Alvos & Segurança", "🛡️ Target Priority & Safety"));
 
+        var respectForbidden = config.RespectForbiddenCasts;
+        if (ImGui.Checkbox(T("Pausar em Casts Proibidos (Cursed Gaze & Sensory Jammer)", "Pause on Forbidden Casts (Cursed Gaze & Sensory Jammer)"), ref respectForbidden))
+        {
+            config.RespectForbiddenCasts = respectForbidden;
+            config.Save();
+        }
+        ImGui.TextDisabled(T("Bloqueia a digitação 500ms antes do ataque proibido terminar e retoma após segurança.",
+                             "Blocks typing 500ms before forbidden cast finishes and resumes once safe."));
+
         var prioritizeBarrier = config.PrioritizeBarrier;
         if (ImGui.Checkbox(T("Priorizar Barreira de Proteção (Escudo da equipe antes de qualquer inimigo)", "Prioritize Shield Barrier (Protect party before any enemy)"), ref prioritizeBarrier))
         {
@@ -401,7 +443,7 @@ public sealed class MainWindow : Window, IDisposable
         }
 
         var respectGaze = config.RespectGaze;
-        if (ImGui.Checkbox(T("Pausar em Ataques de Olhar / Gaze (Evita Letterlock automático em casts cheios)", "Pause on Gaze / Eye Attacks (Prevents automatic Letterlock)"), ref respectGaze))
+        if (ImGui.Checkbox(T("Pausar em Ataques de Olhar da UI (Evita Letterlock automático)", "Pause on UI Gaze Attacks (Prevents automatic Letterlock)"), ref respectGaze))
         {
             config.RespectGaze = respectGaze;
             config.Save();
@@ -411,13 +453,6 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Checkbox(T("Respeitar Letterlock (Pausar imediatamente quando bloqueado)", "Respect Letterlock (Immediately pause while locked)"), ref letterlock))
         {
             config.RespectLetterlock = letterlock;
-            config.Save();
-        }
-
-        var autoEnter = config.AutoPressEnter;
-        if (ImGui.Checkbox(T("Pressionar ENTER automaticamente após terminar a palavra", "Auto-press ENTER after typing word"), ref autoEnter))
-        {
-            config.AutoPressEnter = autoEnter;
             config.Save();
         }
 

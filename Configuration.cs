@@ -52,6 +52,13 @@ public class Configuration : IPluginConfiguration
     public bool AutoPressEnter { get; set; } = true;
     public bool RespectLetterlock { get; set; } = true;
 
+    // Engine mode: true = Saucy Direct Engine (Native word action memory call - 100% accuracy, no key drops)
+    //              false = Simulated Keystrokes (SendInput)
+    public bool UseSaucyEngine { get; set; } = true;
+
+    // Forbidden casts: Cursed Gaze (49529), Sensory Jammer (49532 / 49702)
+    public bool RespectForbiddenCasts { get; set; } = true;
+
     // Input method: 1 = SendInput (Hardware direto - Previne AFK kick & Não come letras), 0 = PostMessage
     public int InputMethod { get; set; } = 1;
 
