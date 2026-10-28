@@ -10,6 +10,7 @@ public class Configuration : IPluginConfiguration
 
     public string Language { get; set; } = "pt"; // "pt" (padrão) ou "en"
     public bool Enabled { get; set; } = false;
+    public bool CompactMode { get; set; } = false; // Modo Mini HUD / Minimizado
     public bool OnlyInKeyboundDuty { get; set; } = true;
 
     // Auto-Loop / Auto-Queue configuration
