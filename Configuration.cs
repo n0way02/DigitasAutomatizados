@@ -12,6 +12,16 @@ public class Configuration : IPluginConfiguration
     public bool Enabled { get; set; } = false;
     public bool OnlyInKeyboundDuty { get; set; } = true;
 
+    // Auto-Loop / Auto-Queue configuration
+    public bool AutoLoopEnabled { get; set; } = false;
+    public bool InfiniteLoops { get; set; } = true;
+    public int LoopCount { get; set; } = 10;
+    public int RemainingLoops { get; set; } = 10;
+    public int CompletedLoops { get; set; } = 0;
+    public bool AutoAcceptQueue { get; set; } = true;
+    public bool AutoRegister { get; set; } = true;
+    public bool AutoExitDuty { get; set; } = true;
+
     // Typing speed configuration (in milliseconds per character)
     public int InitialDelayMs { get; set; } = 100;
     public int MinCharDelayMs { get; set; } = 65;

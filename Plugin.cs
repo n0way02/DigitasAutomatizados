@@ -24,12 +24,16 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] internal static ITargetManager TargetManager { get; private set; } = null!;
+    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
+    [PluginService] internal static ICondition Condition { get; private set; } = null!;
 
     public static Configuration Configuration { get; set; } = null!;
     public WindowSystem WindowSystem { get; } = new("DigitasAutomatizados");
 
     public KeyboundScanner Scanner { get; }
     public AutoTyperService AutoTyper { get; }
+    public AutoQueueService AutoQueue { get; }
     public MainWindow MainWindow { get; }
 
     public Plugin()
@@ -40,7 +44,8 @@ public sealed class Plugin : IDalamudPlugin
 
         Scanner = new KeyboundScanner();
         AutoTyper = new AutoTyperService(Scanner, Configuration);
-        MainWindow = new MainWindow(AutoTyper, Configuration);
+        AutoQueue = new AutoQueueService(Configuration, Scanner, AutoTyper);
+        MainWindow = new MainWindow(AutoTyper, AutoQueue, Configuration);
 
         WindowSystem.AddWindow(MainWindow);
 
@@ -62,6 +67,16 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.AddHandler(ToggleCommand, new CommandInfo(OnToggleCommand)
         {
             HelpMessage = "Alterna Ligar/Desligar o Auto-Typer."
+        });
+
+        CommandManager.AddHandler("/digitasloop", new CommandInfo((_, _) => AutoQueue.ToggleLoop())
+        {
+            HelpMessage = "Alterna Ligar/Desligar o Auto-Loop Farm do Keybound Brawler."
+        });
+
+        CommandManager.AddHandler("/kbtloop", new CommandInfo((_, _) => AutoQueue.ToggleLoop())
+        {
+            HelpMessage = "Atalho para alternar o Auto-Loop Farm."
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -99,6 +114,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnFrameworkUpdate(IFramework framework)
     {
+        AutoQueue.Update();
         AutoTyper.Update();
     }
 
@@ -123,9 +139,12 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandAlias);
         CommandManager.RemoveHandler(CommandDigitas);
         CommandManager.RemoveHandler(ToggleCommand);
+        CommandManager.RemoveHandler("/digitasloop");
+        CommandManager.RemoveHandler("/kbtloop");
 
         WindowSystem.RemoveAllWindows();
         MainWindow.Dispose();
+        AutoQueue.Dispose();
         AutoTyper.Dispose();
 
         try { KeyboardSimulator.TimeEndPeriod(1); } catch { }

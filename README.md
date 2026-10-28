@@ -4,7 +4,7 @@
 
 # ⚡ Digitas Automatizados (Keybound Typer)
 
-Plugin nativo para **FFXIV (Dalamud)** projetado para automatizar e otimizar a digitação no minigame **Keybound Brawler** do Gold Saucer (colaboração FFVII Remake).
+Plugin nativo para **FFXIV (Dalamud)** projetado para automatizar, otimizar e farmar o minigame **Keybound Brawler** do Gold Saucer (colaboração FFVII Remake).
 
 ---
 
@@ -19,19 +19,36 @@ Plugin nativo para **FFXIV (Dalamud)** projetado para automatizar e otimizar a d
    https://raw.githubusercontent.com/n0way02/DigitasAutomatizados/main/pluginmaster.json
    ```
 6. Clique no botão de **`+`** (adicionar) e depois em **Salvar e Fechar** (Save and Close).
-7. Na janela de plugins, busque por **Digitas Automatizados** e clique em **Instalar**!
+7. Na janela de plugins, busque por **Digitas Automatizados** e clique em **Instalar** (ou **Atualizar**)!
 
 ---
 
 ## ⌨️ Comandos
 
 - `/digitas` ou `/kbtyper` ou `/kbt` — Abre ou fecha a janela principal de controle e configurações do plugin.
+- `/digitasloop` ou `/kbtloop` — Alterna Ligar/Desligar o modo **Auto-Loop Farm** instantaneamente.
+
+---
+
+## 🔄 Auto-Loop Farm Automático
+
+Você pode deixar o plugin farmando partidas seguidas sozinho:
+1. Posicione seu personagem próximo ao NPC **Keybound Registrar** no Gold Saucer (X: 5.8, Y: 6.0).
+2. Na aba **Auto-Loop (Farm)**, selecione a quantidade de partidas (ou modo **Infinito**) e clique em **Iniciar Auto-Loop**.
+3. O plugin:
+   - Interage com o NPC `Keybound Registrar`;
+   - Confirma a janela de registro;
+   - Aceita o pop de entrada (`Duty Ready / Commence`);
+   - Assume a digitação automática na arena focando alvos prioritários e evitando gazes;
+   - Sai imediatamente da arena ao término (sem precisar esperar 50s);
+   - Ao desovar no Gold Saucer em frente ao NPC, repete o ciclo sozinho até atingir a meta!
 
 ---
 
 ## ✨ Recursos
 
-- 🎯 **Foco Inteligente de Alvos**: Prioriza automaticamente mecânicas cruciais como Barreiras (ex: *Reflective Barrier*) e Casts de inimigos.
+- 🔄 **Ciclo Auto-Loop Completo**: Fila, aceitação, jogo e saída 100% automatizados com contador de partidas.
+- 🎯 **Foco Inteligente de Alvos**: Prioriza automaticamente mecânicas cruciais como Barreiras (*Reflective Barrier*) e Casts de inimigos.
 - 👁️ **Detecção de Gaze (Olhar)**: Pausa automaticamente a digitação durante mecânicas de gaze para evitar mortes e penalidades.
 - 🛡️ **Filtro Anti-Cast**: Não digita os nomes dos casts dos inimigos, focando estritamente nas palavras de dano e resolução de mecânica.
 - 🚀 **Predefinição Humano Seguro**: Configuração otimizada de delays com variações naturais para máxima confiabilidade e segurança.

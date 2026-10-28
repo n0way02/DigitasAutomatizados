@@ -322,6 +322,9 @@ public sealed class KeyboundScanner
             || spellName.Contains("Petrifaction", StringComparison.OrdinalIgnoreCase)
             || spellName.Contains("Evil Eye", StringComparison.OrdinalIgnoreCase)
             || spellName.Contains("Stop", StringComparison.OrdinalIgnoreCase)
+            || spellName.Contains("Burst", StringComparison.OrdinalIgnoreCase)
+            || spellName.Contains("??? Needles", StringComparison.OrdinalIgnoreCase)
+            || spellName.Contains("Burr Burrow", StringComparison.OrdinalIgnoreCase)
             || spellName.Contains("Letterlock", StringComparison.OrdinalIgnoreCase);
     }
 

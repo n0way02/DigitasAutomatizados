@@ -12,15 +12,17 @@ namespace KeyboundTyper.Windows;
 public sealed class MainWindow : Window, IDisposable
 {
     private readonly AutoTyperService autoTyper;
+    private readonly AutoQueueService autoQueue;
     private readonly Configuration config;
 
     private string testWord = "SEPHIROTH";
     private string nodeFilter = string.Empty;
 
-    public MainWindow(AutoTyperService autoTyper, Configuration config)
+    public MainWindow(AutoTyperService autoTyper, AutoQueueService autoQueue, Configuration config)
         : base("Digitas Automatizados###DigitasAutomatizadosMain", ImGuiWindowFlags.NoCollapse)
     {
         this.autoTyper = autoTyper;
+        this.autoQueue = autoQueue;
         this.config = config;
 
         SizeConstraints = new WindowSizeConstraints
@@ -28,7 +30,7 @@ public sealed class MainWindow : Window, IDisposable
             MinimumSize = new Vector2(400, 300),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
-        Size = new Vector2(540, 620);
+        Size = new Vector2(560, 660);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
@@ -45,6 +47,12 @@ public sealed class MainWindow : Window, IDisposable
             if (ImGui.BeginTabItem($"{T("Controle Principal", "Main Control")}###TabControl"))
             {
                 DrawControlTab();
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem($"{T("🔄 Auto-Loop (Farm)", "🔄 Auto-Loop (Farm)")}###TabAutoLoop"))
+            {
+                DrawAutoLoopTab();
                 ImGui.EndTabItem();
             }
 
@@ -124,7 +132,8 @@ public sealed class MainWindow : Window, IDisposable
 
     private void DrawStatusBar()
     {
-        ImGui.BeginChild("###StatusBanner", new Vector2(-1, 48), true);
+        var height = config.AutoLoopEnabled ? 66f : 48f;
+        ImGui.BeginChild("###StatusBanner", new Vector2(-1, height), true);
 
         if (config.Enabled)
         {
@@ -153,6 +162,12 @@ public sealed class MainWindow : Window, IDisposable
 
         ImGui.SameLine();
         ImGui.TextDisabled($"|  {autoTyper.CurrentStatus}");
+
+        if (config.AutoLoopEnabled)
+        {
+            var remainingStr = config.InfiniteLoops ? T("Infinito", "Infinite") : $"{config.RemainingLoops} {T("restantes", "remaining")}";
+            ImGui.TextColored(new Vector4(0.2f, 0.85f, 1.0f, 1.0f), $"🔄 {T("AUTO-LOOP", "AUTO-LOOP")}: {autoQueue.StatusText}  |  {T("Partidas", "Runs")}: {config.CompletedLoops} ({remainingStr})");
+        }
 
         ImGui.EndChild();
     }
@@ -191,6 +206,31 @@ public sealed class MainWindow : Window, IDisposable
             {
                 config.Enabled = true;
                 config.Save();
+            }
+            ImGui.PopStyleColor(3);
+        }
+
+        // Auto-Loop Quick Toggle Button
+        ImGui.Spacing();
+        if (config.AutoLoopEnabled)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.85f, 0.22f, 0.22f, 0.85f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.95f, 0.32f, 0.32f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.7f, 0.15f, 0.15f, 1.0f));
+            if (ImGui.Button(T("⏹ PARAR AUTO-LOOP (FARM COMPLETO)", "⏹ STOP AUTO-LOOP (FULL FARM)"), new Vector2(-1, 34)))
+            {
+                autoQueue.StopLoop();
+            }
+            ImGui.PopStyleColor(3);
+        }
+        else
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.15f, 0.55f, 0.85f, 0.85f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.25f, 0.65f, 0.95f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.45f, 0.75f, 1.0f));
+            if (ImGui.Button(T("🔄 INICIAR AUTO-LOOP COMPLETO (FARM)", "🔄 START AUTO-LOOP FULL FARM"), new Vector2(-1, 34)))
+            {
+                autoQueue.StartLoop();
             }
             ImGui.PopStyleColor(3);
         }
@@ -616,6 +656,126 @@ public sealed class MainWindow : Window, IDisposable
 
             ImGui.EndTable();
         }
+    }
+
+    private void DrawAutoLoopTab()
+    {
+        ImGui.Spacing();
+
+        // Big Main Auto-Loop Toggle Button
+        var isLooping = config.AutoLoopEnabled;
+        if (isLooping)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.85f, 0.22f, 0.22f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.95f, 0.32f, 0.32f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.7f, 0.15f, 0.15f, 1.0f));
+            if (ImGui.Button(T("⏹ PARAR AUTO-LOOP", "⏹ STOP AUTO-LOOP"), new Vector2(-1, 46)))
+            {
+                autoQueue.StopLoop();
+            }
+            ImGui.PopStyleColor(3);
+        }
+        else
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.15f, 0.55f, 0.85f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.25f, 0.65f, 0.95f, 1.0f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.1f, 0.45f, 0.75f, 1.0f));
+            if (ImGui.Button(T("🔄 INICIAR AUTO-LOOP (FARM COMPLETO)", "🔄 START AUTO-LOOP (FULL FARM)"), new Vector2(-1, 46)))
+            {
+                autoQueue.StartLoop();
+            }
+            ImGui.PopStyleColor(3);
+        }
+
+        SectionHeader(T("📊 Status do Ciclo em Tempo Real", "📊 Live Cycle Status"));
+
+        ImGui.BeginChild("###AutoLoopStatusCard", new Vector2(-1, 84), true);
+        ImGui.TextColored(new Vector4(0.35f, 0.9f, 1.0f, 1.0f), $"{T("Estado Atual", "Current State")}: {autoQueue.StatusText}");
+        ImGui.Spacing();
+
+        var remainingStr = config.InfiniteLoops ? T("Infinito", "Infinite") : $"{config.RemainingLoops} {T("restantes", "remaining")}";
+        ImGui.Text($"{T("Partidas concluídas nesta sessão", "Completed runs this session")}: ");
+        ImGui.SameLine();
+        ImGui.TextColored(new Vector4(0.2f, 1.0f, 0.45f, 1.0f), config.CompletedLoops.ToString());
+        ImGui.SameLine();
+        ImGui.TextDisabled($"|  {T("Meta", "Target")}: {remainingStr}");
+
+        ImGui.EndChild();
+
+        SectionHeader(T("⚙️ Configurações de Repetição & Loops", "⚙️ Repeat & Loop Settings"));
+
+        var infinite = config.InfiniteLoops;
+        if (ImGui.Checkbox(T("Modo Infinito (Repetir sem parar até pausar manualmente)", "Infinite Mode (Repeat continuously until stopped)"), ref infinite))
+        {
+            config.InfiniteLoops = infinite;
+            config.Save();
+        }
+
+        if (!config.InfiniteLoops)
+        {
+            ImGui.Spacing();
+            var loops = config.RemainingLoops;
+            ImGui.Text(T("Quantidade de Loops / Partidas restantes:", "Remaining Loops / Runs:"));
+            ImGui.SameLine();
+
+            if (ImGui.Button("-5###Sub5Loops")) { config.RemainingLoops = Math.Max(1, config.RemainingLoops - 5); config.Save(); }
+            ImGui.SameLine();
+            if (ImGui.Button("-1###Sub1Loop")) { config.RemainingLoops = Math.Max(1, config.RemainingLoops - 1); config.Save(); }
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(80);
+            if (ImGui.InputInt("###LoopCountInput", ref loops))
+            {
+                config.RemainingLoops = Math.Max(1, loops);
+                config.LoopCount = config.RemainingLoops;
+                config.Save();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("+1###Add1Loop")) { config.RemainingLoops += 1; config.Save(); }
+            ImGui.SameLine();
+            if (ImGui.Button("+5###Add5Loops")) { config.RemainingLoops += 5; config.Save(); }
+        }
+
+        ImGui.Spacing();
+        if (ImGui.Button(T("Zerar Contador de Partidas Concluídas", "Reset Completed Runs Counter")))
+        {
+            config.CompletedLoops = 0;
+            config.Save();
+        }
+
+        SectionHeader(T("🤖 Automações do Ciclo", "🤖 Cycle Automations"));
+
+        var autoReg = config.AutoRegister;
+        if (ImGui.Checkbox(T("Interagir com Keybound Registrar e Registrar automaticamente", "Interact with Keybound Registrar & Register automatically"), ref autoReg))
+        {
+            config.AutoRegister = autoReg;
+            config.Save();
+        }
+
+        var autoAccept = config.AutoAcceptQueue;
+        if (ImGui.Checkbox(T("Aceitar confirmação de entrada (Commence) na fila automaticamente", "Auto-accept Duty Ready popup (Commence)"), ref autoAccept))
+        {
+            config.AutoAcceptQueue = autoAccept;
+            config.Save();
+        }
+
+        var autoExit = config.AutoExitDuty;
+        if (ImGui.Checkbox(T("Sair da arena instantaneamente ao término (evita esperar 50s)", "Leave arena instantly upon completion (skips 50s wait)"), ref autoExit))
+        {
+            config.AutoExitDuty = autoExit;
+            config.Save();
+        }
+
+        SectionHeader(T("💡 Como Usar", "💡 How to Use"));
+        ImGui.TextWrapped(T(
+            "1. Posicione seu personagem próximo ao NPC 'Keybound Registrar' no Gold Saucer (X: 5.8, Y: 6.0).\n" +
+            "2. Clique em 'INICIAR AUTO-LOOP'.\n" +
+            "3. O plugin interagirá com o NPC, colocará na fila, confirmará a entrada, jogará a partida digitando com prioridades inteligentes e sairá da arena sozinho ao terminar.\n" +
+            "4. Ao sair da arena, seu personagem já reaparece em frente ao NPC e o ciclo reinicia automaticamente!",
+            "1. Stand near the 'Keybound Registrar' NPC in the Gold Saucer (X: 5.8, Y: 6.0).\n" +
+            "2. Click 'START AUTO-LOOP'.\n" +
+            "3. The plugin will interact with the NPC, queue up, accept Duty Ready, type with smart priorities, and exit the arena upon completion.\n" +
+            "4. When teleported back in front of the NPC, the cycle repeats itself automatically!"
+        ));
     }
 
     public void Dispose() { }
