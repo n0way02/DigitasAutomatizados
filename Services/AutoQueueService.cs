@@ -298,25 +298,19 @@ public sealed class AutoQueueService : IDisposable
     {
         if (!config.AutoExitDuty) return false;
 
-        // Addon oficial de encerramento do Keybound Brawler (Saucy)
-        var ktgResultPtr = Plugin.GameGui.GetAddonByName("KTGResult");
-        var ktgResult = (AtkUnitBase*)ktgResultPtr.Address;
-        if (ktgResult != null && ktgResult->IsVisible)
+        // 1. Addon oficial de encerramento do Keybound Brawler (KTGResult)
+        if (AddonHelper.ClickKtgResultExit())
         {
-            AddonHelper.FireCallback(ktgResult, 0);
             return true;
         }
 
-        // Se abrir a confirmação padrão de saída "SelectYesno"
-        var selectYesnoPtr = Plugin.GameGui.GetAddonByName("SelectYesno");
-        var selectYesno = (AtkUnitBase*)selectYesnoPtr.Address;
-        if (selectYesno != null && selectYesno->IsVisible)
+        // 2. Confirmação padrão "SelectYesno" ("Leave duty?")
+        if (AddonHelper.ClickSelectYesnoYes())
         {
-            AddonHelper.FireCallback(selectYesno, 0); // 0 = Yes / Confirm
             return true;
         }
 
-        // Procura outros diálogos com botão Exit
+        // 3. Fallback para outros addons carregados
         var stage = AtkStage.Instance();
         if (stage == null || stage->RaptureAtkUnitManager == null) return false;
 
@@ -327,10 +321,10 @@ public sealed class AutoQueueService : IDisposable
             if (unit == null || !unit->IsVisible) continue;
             var name = unit->NameString;
 
-            if (name.Contains("KTGResult", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("TurnBreak", StringComparison.OrdinalIgnoreCase) ||
-                name.Contains("Exit", StringComparison.OrdinalIgnoreCase))
+            if (name.Contains("KTGResult", StringComparison.OrdinalIgnoreCase))
             {
+                AddonHelper.TryClickButton(unit, 48);
+                AddonHelper.TryClickButtonByText(unit, "Exit");
                 AddonHelper.FireCallback(unit, 0);
                 return true;
             }

@@ -86,4 +86,105 @@ public static unsafe class AddonHelper
         FireCallback(&addon->AtkUnitBase, 8);
         return true;
     }
+
+    public static bool TryClickButton(AtkUnitBase* addon, uint nodeId)
+    {
+        if (addon == null) return false;
+        var node = addon->GetNodeById(nodeId);
+        if (node == null) return false;
+
+        if (node->Type >= NodeType.Component)
+        {
+            var compNode = (AtkComponentNode*)node;
+            if (compNode->Component != null)
+            {
+                var btn = (AtkComponentButton*)compNode->Component;
+                return ClickButton(addon, btn);
+            }
+        }
+        return false;
+    }
+
+    public static bool TryClickButtonByText(AtkUnitBase* addon, string targetText)
+    {
+        if (addon == null || addon->UldManager.NodeList == null) return false;
+
+        for (int i = 0; i < addon->UldManager.NodeListCount; i++)
+        {
+            var node = addon->UldManager.NodeList[i];
+            if (node == null || !node->IsVisible()) continue;
+
+            if (node->Type >= NodeType.Component)
+            {
+                var compNode = (AtkComponentNode*)node;
+                if (compNode->Component == null) continue;
+
+                var subUld = &compNode->Component->UldManager;
+                if (subUld != null && subUld->NodeList != null)
+                {
+                    for (int j = 0; j < subUld->NodeListCount; j++)
+                    {
+                        var subNode = subUld->NodeList[j];
+                        if (subNode != null && subNode->Type == NodeType.Text)
+                        {
+                            var textNode = (AtkTextNode*)subNode;
+                            var nodeText = textNode->NodeText.ToString();
+                            if (!string.IsNullOrWhiteSpace(nodeText) &&
+                                nodeText.Equals(targetText, StringComparison.OrdinalIgnoreCase))
+                            {
+                                var btn = (AtkComponentButton*)compNode->Component;
+                                return ClickButton(addon, btn);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static bool ClickKtgResultExit()
+    {
+        var ptr = Plugin.GameGui.GetAddonByName("KTGResult");
+        if (ptr.Address == nint.Zero) return false;
+        var addon = (AtkUnitBase*)ptr.Address;
+        if (addon == null || !addon->IsVisible) return false;
+
+        // 1. Saucy Node 48 (ResultCloseButtonId = 48)
+        if (TryClickButton(addon, 48))
+        {
+            Plugin.Log.Information("[AddonHelper] Clicou no botão Exit do KTGResult via Node 48.");
+            return true;
+        }
+
+        // 2. Busca dinâmica por texto "Exit"
+        if (TryClickButtonByText(addon, "Exit"))
+        {
+            Plugin.Log.Information("[AddonHelper] Clicou no botão Exit do KTGResult via busca por texto.");
+            return true;
+        }
+
+        // 3. Fallbacks de callback
+        FireCallback(addon, 0);
+        FireCallback(addon, 48);
+        return true;
+    }
+
+    public static bool ClickSelectYesnoYes()
+    {
+        var ptr = Plugin.GameGui.GetAddonByName("SelectYesno");
+        if (ptr.Address == nint.Zero) return false;
+
+        var addon = (FFXIVClientStructs.FFXIV.Client.UI.AddonSelectYesno*)ptr.Address;
+        if (addon == null || !addon->AtkUnitBase.IsVisible) return false;
+
+        if (addon->YesButton != null && ClickButton(&addon->AtkUnitBase, addon->YesButton))
+        {
+            Plugin.Log.Information("[AddonHelper] Clicou no botão Yes do SelectYesno nativo.");
+            return true;
+        }
+
+        FireCallback(&addon->AtkUnitBase, 0);
+        return true;
+    }
 }

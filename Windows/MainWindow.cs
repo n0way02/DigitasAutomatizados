@@ -63,7 +63,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.BeginGroup();
         ImGui.TextColored(new Vector4(0.35f, 0.85f, 1.0f, 1.0f), "⌨ Digitas Automatizados");
         ImGui.SameLine();
-        ImGui.TextDisabled("v1.6.3");
+        ImGui.TextDisabled("v1.6.4");
         ImGui.EndGroup();
 
         ImGui.SameLine();

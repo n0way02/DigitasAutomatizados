@@ -2,7 +2,7 @@
   "Author": "n0way02",
   "Name": "Digitas Automatizados",
   "InternalName": "KeyboundTyper",
-  "AssemblyVersion": "1.6.3.0",
+  "AssemblyVersion": "1.6.4.0",
   "Description": "Digitação automática inteligente e de alto desempenho para o minigame Keybound Brawler do Gold Saucer.",
   "ApplicableVersion": "any",
   "Punchline": "Auto-typer inteligente para o evento Keybound Brawler.",
