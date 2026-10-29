@@ -15,6 +15,7 @@ public class Configuration : IPluginConfiguration
 
     // Auto-Loop / Auto-Queue configuration
     public bool AutoLoopEnabled { get; set; } = false;
+    public bool IsPartyLeaderOrSolo { get; set; } = true; // true = Solo/Party Leader (fala com NPC), false = Group/No Party Leader (só aceita fila)
     public bool InfiniteLoops { get; set; } = true;
     public int LoopCount { get; set; } = 10;
     public int RemainingLoops { get; set; } = 10;

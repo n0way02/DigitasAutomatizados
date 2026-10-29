@@ -63,7 +63,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.BeginGroup();
         ImGui.TextColored(new Vector4(0.35f, 0.85f, 1.0f, 1.0f), "⌨ Digitas Automatizados");
         ImGui.SameLine();
-        ImGui.TextDisabled("v1.6.4");
+        ImGui.TextDisabled("v1.6.5");
         ImGui.EndGroup();
 
         ImGui.SameLine();
@@ -362,6 +362,39 @@ public sealed class MainWindow : Window, IDisposable
                 autoQueue.StartLoop();
             }
             ImGui.PopStyleColor(3);
+        }
+
+        // Loop Mode Selector: Solo / Party Leader vs Group / No Party Leader
+        var isSoloOrLeader = config.IsPartyLeaderOrSolo;
+
+        ImGui.PushStyleColor(ImGuiCol.Button, isSoloOrLeader ? new Vector4(0.18f, 0.55f, 0.85f, 0.95f) : new Vector4(0.20f, 0.22f, 0.28f, 0.75f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, isSoloOrLeader ? new Vector4(0.24f, 0.62f, 0.92f, 1.0f) : new Vector4(0.28f, 0.31f, 0.38f, 0.9f));
+        if (ImGui.Button(isSoloOrLeader ? "✓ Solo / Party Leader" : "Solo / Party Leader", new Vector2(btnWidth, 28)))
+        {
+            config.IsPartyLeaderOrSolo = true;
+            config.Save();
+        }
+        ImGui.PopStyleColor(2);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(T("Modo Solo ou Líder do Grupo:\nClica no NPC Keybound Registrar, puxa a fila, aceita o Commence, joga e sai.",
+                               "Solo or Party Leader mode:\nInteracts with the Keybound Registrar NPC, queues up, accepts Commence, plays, and exits."));
+        }
+
+        ImGui.SameLine();
+
+        ImGui.PushStyleColor(ImGuiCol.Button, !isSoloOrLeader ? new Vector4(0.18f, 0.55f, 0.85f, 0.95f) : new Vector4(0.20f, 0.22f, 0.28f, 0.75f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, !isSoloOrLeader ? new Vector4(0.24f, 0.62f, 0.92f, 1.0f) : new Vector4(0.28f, 0.31f, 0.38f, 0.9f));
+        if (ImGui.Button(!isSoloOrLeader ? "✓ Group / No Party Leader" : "Group / No Party Leader", new Vector2(btnWidth, 28)))
+        {
+            config.IsPartyLeaderOrSolo = false;
+            config.Save();
+        }
+        ImGui.PopStyleColor(2);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(T("Modo Grupo (Sem Líder):\nNÃO fala com o NPC! Apenas aguarda o líder puxar a fila, clica em Commence, joga e clica em Exit.",
+                               "Group (Not Party Leader) mode:\nDoes NOT interact with the NPC! Waits for party leader to queue, clicks Commence, plays, and clicks Exit."));
         }
     }
 

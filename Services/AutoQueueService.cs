@@ -123,6 +123,27 @@ public sealed class AutoQueueService : IDisposable
                     return;
                 }
 
+                // Se o popup de confirmação (Commence) já estiver na tela, aceita imediatamente
+                if (TryHandleContentsFinderConfirm())
+                {
+                    SetState(AutoQueueState.EnteringDuty, "Partida encontrada! Clicando em Commence...");
+                    return;
+                }
+
+                // Modo Group / No Party Leader: não precisa falar com o NPC, apenas aguarda a fila do líder
+                if (!config.IsPartyLeaderOrSolo)
+                {
+                    SetState(AutoQueueState.WaitingDutyPop, "Modo Grupo (Sem Líder): Aguardando líder puxar a fila...");
+                    return;
+                }
+
+                // Se já estiver na fila (WaitingForDutyFinder), vai direto aguardar o pop
+                if (Plugin.Condition[ConditionFlag.WaitingForDutyFinder])
+                {
+                    SetState(AutoQueueState.WaitingDutyPop, "Na fila! Aguardando partida (Commence)...");
+                    return;
+                }
+
                 // Aguarda 2.5s após loading para o personagem e NPCs carregarem
                 if (stateTimer.ElapsedMilliseconds < 2500)
                 {
@@ -137,6 +158,19 @@ public sealed class AutoQueueService : IDisposable
                 if (isBoundByDuty || isInKeybound)
                 {
                     SetState(AutoQueueState.InDuty, "Na arena Keybound Brawler.");
+                    return;
+                }
+
+                if (TryHandleContentsFinderConfirm())
+                {
+                    SetState(AutoQueueState.EnteringDuty, "Partida encontrada! Clicando em Commence...");
+                    return;
+                }
+
+                // Se o usuário trocou para Group / No Party Leader enquanto procurava o NPC
+                if (!config.IsPartyLeaderOrSolo)
+                {
+                    SetState(AutoQueueState.WaitingDutyPop, "Modo Grupo (Sem Líder): Aguardando líder puxar a fila...");
                     return;
                 }
 
@@ -159,6 +193,12 @@ public sealed class AutoQueueService : IDisposable
                 if (TryHandleContentsFinderConfirm())
                 {
                     SetState(AutoQueueState.EnteringDuty, "Confirmando entrada na partida (Commence)...");
+                    return;
+                }
+
+                if (!config.IsPartyLeaderOrSolo)
+                {
+                    SetState(AutoQueueState.WaitingDutyPop, "Modo Grupo (Sem Líder): Aguardando líder puxar a fila...");
                     return;
                 }
 
@@ -194,7 +234,15 @@ public sealed class AutoQueueService : IDisposable
                     return;
                 }
 
-                // Se passar muito tempo (ex: 20s) e não tiver na fila nem aparecer confirmação, reavalia
+                if (!config.IsPartyLeaderOrSolo)
+                {
+                    StatusText = Plugin.Condition[ConditionFlag.WaitingForDutyFinder]
+                        ? "Na fila em grupo! Aguardando Commence..."
+                        : "Modo Grupo (Sem Líder): Aguardando líder puxar a fila...";
+                    return;
+                }
+
+                // No modo Solo/Leader, se passar muito tempo (ex: 20s) e não tiver na fila nem aparecer confirmação, reavalia
                 if (stateTimer.ElapsedMilliseconds > 20000 && !Plugin.Condition[ConditionFlag.WaitingForDutyFinder])
                 {
                     SetState(AutoQueueState.WaitingOutside, "Reiniciando busca de fila...");
